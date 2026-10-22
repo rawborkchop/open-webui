@@ -103,6 +103,9 @@ async def cleanup_response(
     one-off session, pass it here to close it after the response.
     """
     if response:
+        recorder = getattr(response, 'recorder', None)
+        if recorder is not None and not recorder.finished:
+            await recorder.finish('incomplete')
         if not response.closed:
             # aiohttp 3.9+ made ClientResponse.close() synchronous (returns None).
             # Older versions returned a coroutine.  Handle both gracefully.

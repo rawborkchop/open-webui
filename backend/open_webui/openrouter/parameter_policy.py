@@ -18,6 +18,8 @@ class ParameterPolicy:
         for path, rule in self.rules.items():
             if not isinstance(path, str) or len(path) > 256 or not re.fullmatch(r'[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)*', path):
                 raise ValueError(f'Invalid parameter path: {path}')
+            if path.split('.')[0] in {'model', 'messages', 'input', 'prompt', 'headers', 'authorization', 'api_key', 'params', 'custom_params'}:
+                raise ValueError(f'{path}: structural and credential fields cannot be parameter rules')
             self.validate_rule(path, rule)
         object.__setattr__(self, 'rules', deepcopy(self.rules))
     @staticmethod

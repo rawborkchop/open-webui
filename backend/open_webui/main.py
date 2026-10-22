@@ -149,6 +149,8 @@ from open_webui.models.messages import Messages
 from open_webui.models.models import Models, normalize_model_tags
 from open_webui.models.groups import Groups, resolve_group_default_models
 from open_webui.models.users import Users
+from open_webui.openrouter.input_capture_middleware import InputCaptureMiddleware
+from open_webui.routers import openrouter
 from open_webui.routers import (
     apps,
     analytics,
@@ -875,6 +877,8 @@ app.mount('/ws', socket_app)
 
 app.include_router(ollama.router, prefix='/ollama', tags=['ollama'])
 app.include_router(openai.router, prefix='/openai', tags=['openai'])
+app.include_router(openrouter.router, prefix='/api/v1/openrouter', tags=['openrouter'])
+app.add_middleware(InputCaptureMiddleware)
 
 
 app.include_router(pipelines.router, prefix='/api/v1/pipelines', tags=['pipelines'])

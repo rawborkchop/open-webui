@@ -14,6 +14,10 @@ from open_webui.models.auths import Auth
 from open_webui.models.calendar import Calendar, CalendarEvent, CalendarEventAttendee  # noqa: F401
 from open_webui.models.chat_messages import ChatMessage  # noqa: F401
 from open_webui.models.chats import Chat  # noqa: F401
+from open_webui.openrouter.parameter_policy_record import ParameterPolicyRecord  # noqa: F401
+from open_webui.openrouter.parameter_policy_revision import ParameterPolicyRevision  # noqa: F401
+from open_webui.openrouter.provider_exchange import ProviderExchange  # noqa: F401
+from open_webui.openrouter.provider_exchange_chunk import ProviderExchangeChunk  # noqa: F401
 from sqlalchemy import create_engine, engine_from_config, inspect, pool
 
 alembic_config = alembic.context.config

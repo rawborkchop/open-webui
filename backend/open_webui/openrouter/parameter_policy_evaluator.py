@@ -49,6 +49,12 @@ class ParameterPolicyEvaluator:
             for path, rule in policy.rules.items():
                 if 'value' in rule and rule['access'] != 'editable':
                     set_path(result, path, rule['value'])
+        sentinel = object()
+        for policy in self.policies:
+            for path, rule in policy.rules.items():
+                value = get_path(result, path, sentinel)
+                if value is not sentinel:
+                    ParameterPolicy.validate_value(path, value, rule)
         return result
     def visible(self, payload):
         result = deepcopy(payload)

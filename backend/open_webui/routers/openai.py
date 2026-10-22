@@ -37,6 +37,7 @@ from open_webui.models.config import Config
 from open_webui.models.groups import Groups
 from open_webui.models.models import Models
 from open_webui.models.users import UserModel
+from open_webui.openrouter.gateway import governed_request
 from open_webui.utils.access_control import check_model_access, has_connection_access, has_permission
 from open_webui.utils.anthropic import ANTHROPIC_VERSION, get_anthropic_models, is_anthropic_url
 from open_webui.utils.auth import get_admin_user, get_verified_user
@@ -1582,7 +1583,7 @@ async def generate_chat_completion(
     try:
         session = await get_session()
 
-        r = await session.request(
+        r = await governed_request(session, request, user, metadata=metadata,
             method='POST',
             url=request_url,
             data=payload,
@@ -1670,6 +1671,8 @@ async def generate_chat_completion(
                 response = convert_responses_result(response)
 
             return response
+    except HTTPException:
+        raise
     except Exception as e:
         log.exception(e)
 
@@ -1737,7 +1740,7 @@ async def embeddings(request: Request, form_data: dict, user):
 
     try:
         session = await get_session()
-        r = await session.request(
+        r = await governed_request(session, request, user,
             method='POST',
             url=embeddings_url,
             data=body,
@@ -1778,6 +1781,8 @@ async def embeddings(request: Request, form_data: dict, user):
                     return PlainTextResponse(status_code=r.status, content=response_data, headers=retry_headers)
 
             return response_data
+    except HTTPException:
+        raise
     except Exception as e:
         log.exception(e)
         raise HTTPException(
@@ -1866,7 +1871,7 @@ async def responses(
             request_url = f'{url}/responses'
 
         session = await get_session()
-        r = await session.request(
+        r = await governed_request(session, request, user,
             method='POST',
             url=request_url,
             data=body,
@@ -1990,7 +1995,7 @@ async def proxy(path: str, request: Request, user=Depends(get_verified_user)):
             request_url = f'{url}/{path}'
 
         session = await get_session()
-        r = await session.request(
+        r = await governed_request(session, request, user, passthrough=True,
             method=request.method,
             url=request_url,
             data=body,

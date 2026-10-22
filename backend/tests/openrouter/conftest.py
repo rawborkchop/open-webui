@@ -9,3 +9,15 @@ os.environ.setdefault('USE_SLIM_DOCKER', 'true')
 _test_data = tempfile.TemporaryDirectory(prefix='openrouter-tests-')
 os.environ.setdefault('DATABASE_URL', f'sqlite:///{Path(_test_data.name).as_posix()}/upstream.db')
 os.environ.setdefault('DATABASE_POOL_SIZE', '5')
+import pytest_asyncio
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+@pytest_asyncio.fixture
+async def store(tmp_path):
+    from open_webui.openrouter.sqlalchemy_exchange_repository import SQLAlchemyExchangeRepository
+    from open_webui.openrouter.tables import tables
+    engine = create_async_engine(f'sqlite+aiosqlite:///{tmp_path / "test-store.db"}')
+    async with engine.begin() as db:
+        for table in tables():
+            await db.run_sync(table.create)
+    yield SQLAlchemyExchangeRepository(async_sessionmaker(engine, expire_on_commit=False))
+    await engine.dispose()
