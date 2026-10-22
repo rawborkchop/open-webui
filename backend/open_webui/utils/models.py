@@ -262,6 +262,7 @@ async def get_all_models(request, refresh: bool = False, user: UserModel = None)
                 'owned_by': owned_by,
                 'connection_type': connection_type,
                 'preset': True,
+                'openrouter': bool(base_model and base_model.get('openrouter')),
                 **({'pipe': pipe} if pipe is not None else {}),
                 **({'provider': base_model.get('provider')} if base_model and base_model.get('provider') else {}),
                 **({'loaded': base_model.get('loaded')} if base_model and base_model.get('loaded') is not None else {}),

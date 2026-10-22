@@ -195,6 +195,7 @@ export type Model = OpenAIModel | OllamaModel;
 
 type BaseModel = {
 	id: string;
+	openrouter?: boolean;
 	name: string;
 	info?: ModelConfig;
 	owned_by: 'ollama' | 'openai' | 'arena';

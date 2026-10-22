@@ -83,6 +83,7 @@
 								: 'text-gray-300 dark:text-gray-600 hover:text-gray-700 dark:hover:text-white'} transition select-none"
 							href="/admin/evaluations">{$i18n.t('Evaluations')}</a
 						>
+						<a draggable="false" class="min-w-fit px-2 text-sm {$page.url.pathname.includes('/admin/openrouter') ? '' : 'text-gray-400 hover:text-gray-700 dark:hover:text-white'}" href="/admin/openrouter">OpenRouter</a>
 
 						{#if $config?.features?.enable_functions}
 							<a

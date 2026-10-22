@@ -1259,6 +1259,7 @@
 							</button>
 						</div>
 
+						<a href="/openrouter" class="mx-1 flex items-center gap-2 rounded-xl px-2 py-1.5 text-[0.8125rem] hover:bg-gray-100 dark:hover:bg-gray-900"><span class="flex size-4 items-center justify-center text-xs" aria-hidden="true">↗</span>OpenRouter</a>
 						<div id="pinned-menu-items-list">
 							{#each pinnedItems as itemId (itemId)}
 								{@const meta = getMenuItemMeta(itemId)}

@@ -37,7 +37,7 @@ from open_webui.models.config import Config
 from open_webui.models.groups import Groups
 from open_webui.models.models import Models
 from open_webui.models.users import UserModel
-from open_webui.openrouter.gateway import governed_request
+from open_webui.openrouter.gateway import governed_request, is_openrouter_url
 from open_webui.utils.access_control import check_model_access, has_connection_access, has_permission
 from open_webui.utils.anthropic import ANTHROPIC_VERSION, get_anthropic_models, is_anthropic_url
 from open_webui.utils.auth import get_admin_user, get_verified_user
@@ -658,6 +658,7 @@ async def get_all_models_responses(request: Request, user: UserModel) -> list:
                 model_list = []
 
             for model in model_list:
+                model['openrouter'] = is_openrouter_url(url)
                 # Remove name key if its value is None #16689
                 if 'name' in model and model['name'] is None:
                     del model['name']
