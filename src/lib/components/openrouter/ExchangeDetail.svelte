@@ -47,7 +47,7 @@
 		</div>
 		<JsonView value={displayed} label={tabs.find(item => item.id === tab)?.label ?? 'Contenido'} />
 		<p class="or-muted or-footnote">El razonamiento mostrado es el que devolvió el proveedor. Los bloques cifrados o los resúmenes conservan su formato original.</p>
-		<details class="or-metadata"><summary>Identificadores e integridad</summary><JsonView label="Metadatos" value={{ id: record.id, user_id: record.user_id, chat_id: record.chat_id, message_id: record.message_id, provider_id: record.provider_id, request_sha256: record.request_sha256, response_sha256: record.response_sha256, files: record.files }} /></details>
+		<details class="or-metadata"><summary>Identificadores e integridad</summary><JsonView label="Metadatos" value={{ id: record.id, run_id: record.run_id, parent_id: record.parent_id, endpoint: record.endpoint, user_id: record.user_id, chat_id: record.chat_id, message_id: record.message_id, provider_id: record.provider_id, request_sha256: record.request_sha256, response_sha256: record.response_sha256, files: record.files }} /></details>
 	{:else}<p class="or-empty">Selecciona un intercambio para revisar su entrada y salida.</p>{/if}
 </section>
 <style>

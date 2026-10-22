@@ -30,6 +30,9 @@ export type EffectivePolicy = {
 };
 export type ExchangeSummary = {
 	id: string;
+	run_id: string;
+	parent_id?: string | null;
+	endpoint: string;
 	user_id: string;
 	chat_id: string | null;
 	message_id: string | null;
