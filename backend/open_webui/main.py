@@ -2443,7 +2443,7 @@ async def get_app_config(request: Request):
                     'enable_tool_servers': ENABLE_TOOL_SERVERS,
                     'enable_folders': config.get('folders.enable'),
                     'folder_max_file_count': config.get('folders.max_file_count'),
-                    'enable_channels': config.get('channels.enable'),
+                    'enable_channels': config.get('channels.enable') and (user.role == 'admin' or not strict_user_isolation()),
                     'enable_encrypted_channels': config.get('channels.encryption.enable'),
                     'enable_apps': config.get('apps.enable'),
                     'enable_calendar': config.get('calendar.enable'),
@@ -3148,7 +3148,9 @@ async def serve_cache_file(
         raise HTTPException(status_code=404, detail='File not found')
     if not os.path.isfile(file_path):
         raise HTTPException(status_code=404, detail='File not found')
-
+    from open_webui.openrouter.cache_access import can_read_cache
+    if not await can_read_cache(file_path, user):
+        raise HTTPException(status_code=404, detail='File not found')
     mime, _ = mimetypes.guess_type(file_path)
     inline_safe = mime and mime.split('/', 1)[0] in {'image', 'audio', 'video'}
     headers = {'X-Content-Type-Options': 'nosniff'}

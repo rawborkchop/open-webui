@@ -12,6 +12,14 @@ def is_openrouter_url(url):
     parsed = urlparse(str(url))
     return parsed.hostname == 'openrouter.ai'
 async def validate_references(payload, user, store):
+    def has_unowned_reference(value):
+        if isinstance(value, list):
+            return any(has_unowned_reference(item) for item in value)
+        if isinstance(value, dict):
+            return value.get('type') == 'item_reference' or 'file_id' in value or any(has_unowned_reference(item) for item in value.values())
+        return False
+    if user.role != 'admin' and has_unowned_reference(payload.get('input', [])):
+        raise HTTPException(403, 'Provider item and file references are not supported for ordinary users')
     previous = payload.get('previous_response_id')
     if previous and user.role != 'admin':
         records = await store.list(user.id, False, provider_id=previous, limit=1)
@@ -47,7 +55,12 @@ async def governed_request(session, request, user, *, metadata=None, passthrough
             try:
                 original = json.loads(await request.body())
             except (RuntimeError, ValueError):
-                raise HTTPException(400, 'Original inference input is unavailable') from None
+                path = getattr(getattr(request, 'url', None), 'path', '')
+                if not path or path.startswith(('/openai/', '/api/chat/completions', '/api/v1/chat/completions', '/api/v1/tasks/')):
+                    raise HTTPException(400, 'Original inference input is unavailable') from None
+                # File processing and other server-created embedding calls have no JSON chat envelope.
+                original = deepcopy(payload)
+                internal = True
     try:
         if not internal:
             evaluator.authorize(parameter_input(original), is_admin=user.role == 'admin')
@@ -89,8 +102,15 @@ async def governed_request(session, request, user, *, metadata=None, passthrough
         'model': model, 'endpoint': endpoint, 'purpose': purpose,
         'original_request': deepcopy(original), 'request_body': body, 'policies': evaluator.snapshot(),
         'files': deepcopy(context.get('files') or [])}
+    chain = getattr(request.state, 'openrouter_exchange_chain', None)
+    if chain is None:
+        chain = {}
+        request.state.openrouter_exchange_chain = chain
+    chain_key = (values['chat_id'], values['message_id'], purpose, model)
+    values['parent_id'] = chain.get(chain_key)
     recorder = ExchangeRecorder(store, values)
     await recorder.begin()
+    chain[chain_key] = exchange_id
     try:
         response = await session.request(**kwargs)
     except (asyncio.CancelledError, GeneratorExit):

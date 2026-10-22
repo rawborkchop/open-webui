@@ -111,3 +111,31 @@ async def test_foreign_previous_response_cannot_be_reused(store):
     # Assert
     assert error.status_code == 403
     assert session.request.await_count == 0
+@pytest.mark.asyncio
+async def test_provider_item_reference_cannot_retrieve_another_users_output(store):
+    # Arrange
+    body = {'model': 'm', 'input': [{'type': 'item_reference', 'id': 'foreign-item'}]}
+    session = SimpleNamespace(request=AsyncMock())
+    error = None
+    # Act
+    try:
+        await governed_request(session, request(body), SimpleNamespace(id='a', role='user'), store=store, evaluator=evaluator(), method='POST', url='https://openrouter.ai/api/v1/responses', data=json.dumps(body))
+    except HTTPException as failure:
+        error = failure
+    # Assert
+    assert error.status_code == 403
+    assert session.request.await_count == 0
+@pytest.mark.asyncio
+async def test_server_created_embedding_call_without_json_chat_envelope_is_audited(store):
+    # Arrange
+    incoming = SimpleNamespace(state=SimpleNamespace(), url=SimpleNamespace(path='/api/v1/files/'), body=AsyncMock(side_effect=RuntimeError('already consumed multipart')))
+    payload = {'model': 'm', 'input': 'extracted document content'}
+    session = SimpleNamespace(request=AsyncMock(return_value=response(b'{"data":[{"embedding":[1,2]}]}')))
+    # Act
+    result = await governed_request(session, incoming, SimpleNamespace(id='a', role='user'), store=store, evaluator=evaluator(), method='POST', url='https://openrouter.ai/api/v1/embeddings', data=json.dumps(payload))
+    await result.read()
+    records = await store.list('a', False)
+    # Assert
+    assert records['total'] == 1
+    assert records['items'][0]['endpoint'] == 'embeddings'
+    assert 'reasoning' not in json.loads(session.request.call_args.kwargs['data'])

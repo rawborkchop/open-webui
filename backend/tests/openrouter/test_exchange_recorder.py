@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock
 import pytest
 from open_webui.openrouter.exchange_recorder import ExchangeRecorder
+from open_webui.openrouter.recorded_stream import RecordedStream
 def repository():
     return SimpleNamespace(start=AsyncMock(), append=AsyncMock(), finish=AsyncMock())
 def values():
@@ -91,3 +92,35 @@ async def test_responses_api_terminal_event_and_late_usage_are_captured():
     assert repo.finish.call_args.kwargs['state'] == 'completed'
     assert repo.finish.call_args.kwargs['provider_id'] == 'r1'
     assert repo.finish.call_args.kwargs['response']['usage']['input_tokens'] == 10
+@pytest.mark.asyncio
+async def test_unrecognized_events_preserve_raw_bytes_and_do_not_abort_capture():
+    # Arrange
+    repo = repository()
+    recorder = ExchangeRecorder(repo, values())
+    body = b'data: {"choices":true,"type":null}\n\ndata: [DONE]\n\n'
+    # Act
+    await recorder.begin()
+    recorder.bind(200, True)
+    await recorder.record(body)
+    await recorder.finish()
+    # Assert
+    assert repo.append.call_args.args[2] == body
+    assert repo.finish.call_args.kwargs['state'] == 'completed'
+@pytest.mark.asyncio
+async def test_closing_stream_records_cancelled_state_without_delays():
+    # Arrange
+    repo = repository()
+    recorder = ExchangeRecorder(repo, values())
+    async def parts():
+        yield b'data: {"choices":[]}\n\n'
+        yield b'data: [DONE]\n\n'
+    stream = RecordedStream(SimpleNamespace(iter_any=parts), recorder)
+    await recorder.begin()
+    recorder.bind(200, True)
+    # Act
+    iterator = stream.iter_any()
+    first = await anext(iterator)
+    await iterator.aclose()
+    # Assert
+    assert first.startswith(b'data:')
+    assert repo.finish.call_args.kwargs['state'] == 'cancelled'

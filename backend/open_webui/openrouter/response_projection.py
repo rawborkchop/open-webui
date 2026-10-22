@@ -6,7 +6,8 @@ def merge_delta(target, delta):
                 target[key] = {}
             merge_delta(target[key], value)
         elif isinstance(value, str) and key not in {'id', 'type', 'role', 'format'}:
-            target[key] = target.get(key, '') + value
+            previous = target.get(key, '')
+            target[key] = (previous if isinstance(previous, str) else '') + value
         elif isinstance(value, list) and key in {'tool_calls', 'reasoning_details'}:
             current = target.setdefault(key, [])
             for item in value:
@@ -22,15 +23,18 @@ def merge_delta(target, delta):
             target[key] = value
 class ResponseProjection:
     def __init__(self):
-        self.buffer = b''
+        self.buffer = bytearray()
         self.data_lines = []
         self.result = {}
         self.terminal = False
         self.error = False
     def feed(self, data):
-        self.buffer += data
-        while b'\n' in self.buffer:
-            line, self.buffer = self.buffer.split(b'\n', 1)
+        self.buffer.extend(data)
+        if b'\n' not in data:
+            return
+        *lines, rest = bytes(self.buffer).split(b'\n')
+        self.buffer = bytearray(rest)
+        for line in lines:
             line = line.rstrip(b'\r')
             if not line:
                 self.dispatch()
@@ -48,17 +52,19 @@ class ResponseProjection:
             return
         if not isinstance(item, dict):
             return
-        kind = item.get('type', '')
+        kind = item.get('type') if isinstance(item.get('type'), str) else ''
         if item.get('error') or kind in {'error', 'response.failed', 'response.incomplete'}:
             self.error = True
             self.result['error'] = item.get('error', item)
         if kind in {'response.completed', 'response.failed', 'response.incomplete'}:
             self.terminal = True
-            self.result.update(item.get('response') or {})
+            if isinstance(item.get('response'), dict):
+                self.result.update(item['response'])
         for key in ('id', 'model', 'usage', 'provider', 'system_fingerprint'):
             if item.get(key) is not None:
                 self.result[key] = item[key]
-        for choice in item.get('choices') or []:
+        choices_input = item.get('choices')
+        for choice in choices_input if isinstance(choices_input, list) else []:
             if not isinstance(choice, dict):
                 continue
             choices = self.result.setdefault('choices', [])

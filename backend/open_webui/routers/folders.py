@@ -37,6 +37,7 @@ from open_webui.tasks import has_active_tasks
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from open_webui.openrouter.private_routes import enforce_private_routes
+from open_webui.openrouter.private_data import strict_user_isolation
 
 log = logging.getLogger(__name__)
 
@@ -247,6 +248,8 @@ async def get_shared_folders(
     db: AsyncSession = Depends(get_async_session),
 ):
     """Get folders shared with or by the current user."""
+    if strict_user_isolation() and user.role != 'admin':
+        return []
     await check_folders_permission(request, user, db=db)
     groups = await Groups.get_groups_by_member_id(user.id, db=db, include_inherited=True)
     group_ids = {g.id for g in groups}

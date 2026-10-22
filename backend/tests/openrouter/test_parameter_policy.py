@@ -108,3 +108,14 @@ def test_hidden_and_server_only_values_are_removed_from_user_inspection():
     result = evaluator.visible({'provider': {'order': ['private'], 'allow_fallbacks': False}, 'user': 'internal-id', 'messages': []})
     # Assert
     assert result == {'provider': {'allow_fallbacks': False}, 'messages': []}
+def test_specific_defaults_cannot_bypass_global_range():
+    # Arrange
+    evaluator = ParameterPolicyEvaluator([policy({'max_tokens': {'access': 'editable', 'type': 'integer', 'maximum': 100}}), policy({'max_tokens': {'access': 'editable', 'value': 1000}}, 'model', 'm')])
+    error = None
+    # Act
+    try:
+        evaluator.apply({'model': 'm'})
+    except ValueError as failure:
+        error = failure
+    # Assert
+    assert error is not None

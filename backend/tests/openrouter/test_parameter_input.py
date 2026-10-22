@@ -1,4 +1,3 @@
-import pytest
 from open_webui.openrouter.parameter_input import parameter_input, canonical_payload
 def test_custom_json_and_token_aliases_are_normalized_before_authorization():
     # Arrange

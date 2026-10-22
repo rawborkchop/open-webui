@@ -30,16 +30,20 @@ class ExchangeRecorder:
         self.byte_count += len(body)
         self.digest.update(body)
         if self.streaming:
-            self.projection.feed(body)
+            try:
+                self.projection.feed(body)
+            except (ValueError, TypeError, KeyError, AttributeError, RecursionError):
+                # Projection is optional; original bytes remain authoritative and durable.
+                self.projection.result['projection_warning'] = 'An unrecognized provider event was preserved in the raw response'
     def normal_response(self, body):
         try:
             self.normal = json.loads(body)
-        except (ValueError, UnicodeDecodeError):
+        except (ValueError, UnicodeDecodeError, RecursionError):
             self.normal = {'text': body.decode('utf-8', errors='replace')}
     async def finish(self, state=None, error=None):
         if self.finished:
             return
-        response = self.projection.result if self.streaming else self.normal
+        response = (self.projection.result or self.normal) if self.streaming else self.normal
         if state is None:
             complete = self.projection.terminal if self.streaming else self.normal is not None
             state = 'completed' if complete else 'incomplete'

@@ -52,7 +52,7 @@ async def test_sharing_routes_are_closed_to_ordinary_users(path, monkeypatch):
     error = None
     # Act
     try:
-        await enforce_private_routes(SimpleNamespace(url=SimpleNamespace(path=path)), SimpleNamespace(id='a', role='user'))
+        await enforce_private_routes(SimpleNamespace(url=SimpleNamespace(path=path), method='POST'), SimpleNamespace(id='a', role='user'))
     except HTTPException as failure:
         error = failure
     # Assert

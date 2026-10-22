@@ -48,7 +48,10 @@ async def get_effective(model: str = '', user_id: str | None = None, user=Depend
         target = await Users.get_user_by_id(user_id)
         if target is None:
             raise HTTPException(404, 'User not found')
-    evaluator = await evaluator_for(target, model, store=store)
+    from open_webui.models.models import Models
+    model_info = await Models.get_model_by_id(model) if model else None
+    targets = {model, model_info.base_model_id} if model_info and model_info.base_model_id else {model}
+    evaluator = await evaluator_for(target, targets, store=store)
     return {'model': model, 'user_id': target.id, 'rules': describe(evaluator, is_admin=user.role == 'admin'),
         'versions': [{'scope': policy.scope, 'version': policy.version} for policy in evaluator.policies]}
 @router.get('/exchanges')

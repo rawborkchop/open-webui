@@ -50,6 +50,7 @@ from open_webui.utils.models import get_all_models
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from open_webui.openrouter.private_routes import enforce_private_routes
+from open_webui.openrouter.private_data import strict_user_isolation
 
 log = logging.getLogger(__name__)
 
@@ -1248,6 +1249,8 @@ async def get_shared_session_user_chat_list(
     user=Depends(get_verified_user),
     db: AsyncSession = Depends(get_async_session),
 ):
+    if strict_user_isolation() and user.role != 'admin':
+        return []
     if page is None:
         page = 1
 

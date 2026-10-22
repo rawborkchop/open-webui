@@ -1,4 +1,3 @@
-import json
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 import httpx
@@ -8,6 +7,7 @@ from fastapi import FastAPI
 from open_webui.routers import openrouter
 from open_webui.utils.auth import get_current_user
 from open_webui.models.groups import Groups
+from open_webui.models.models import Models
 @pytest_asyncio.fixture
 async def api(store, monkeypatch):
     app = FastAPI()
@@ -17,6 +17,7 @@ async def api(store, monkeypatch):
     app.dependency_overrides[get_current_user] = lambda: actor
     app.dependency_overrides[openrouter.repository] = lambda: store
     monkeypatch.setattr(Groups, 'get_groups_by_member_id', AsyncMock(return_value=[]))
+    monkeypatch.setattr(Models, 'get_model_by_id', AsyncMock(return_value=None))
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url='http://test') as client:
         yield client, actor
 @pytest.mark.asyncio
@@ -76,3 +77,14 @@ async def test_user_inspection_hides_server_only_values_and_raw_request(api, sto
     assert 'request_raw_base64' not in own.json()
     assert raw.status_code == 403
     assert other_preview.status_code == 403
+@pytest.mark.asyncio
+async def test_alias_preview_includes_base_model_restrictions(api, store, monkeypatch):
+    # Arrange
+    client, actor = api
+    monkeypatch.setattr(Models, 'get_model_by_id', AsyncMock(return_value=SimpleNamespace(base_model_id='provider/base')))
+    await store.save_policy('model', 'provider/base', {'temperature': {'access': 'hidden'}}, 'admin', expected_version=0)
+    # Act
+    preview = await client.get('/api/v1/openrouter/effective?model=custom-alias')
+    # Assert
+    assert preview.status_code == 200
+    assert 'temperature' not in preview.json()['rules']
