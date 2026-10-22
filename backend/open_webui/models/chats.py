@@ -18,6 +18,7 @@ from open_webui.models.automations import AutomationRun
 from open_webui.models.chat_messages import ChatMessage, ChatMessages
 from open_webui.models.folders import Folders
 from open_webui.models.tags import Tag, TagModel, Tags
+from open_webui.openrouter.private_data import strict_user_isolation
 from open_webui.utils.misc import get_output_text, sanitize_data_for_db, sanitize_text_for_db
 from pydantic import BaseModel, ConfigDict, field_validator
 from sqlalchemy import (
@@ -1928,6 +1929,8 @@ class ChatTable:
             and (ENABLE_ADMIN_CHAT_ACCESS or is_internal_chat(chat.meta))
         ):
             return ChatModel.model_validate(chat)
+        if strict_user_isolation() and user.role != 'admin':
+            return None
         from open_webui.models.shared_chats import SharedChats
 
         shared = await SharedChats.get_by_chat_id(id, db=db)

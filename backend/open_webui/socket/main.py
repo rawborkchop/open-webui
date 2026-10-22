@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import copy
 import logging
+from open_webui.openrouter.private_data import strict_user_isolation
 import random
 import sys
 import time
@@ -490,6 +491,8 @@ async def enter_room_for_users(room: str, user_ids: list[str]):
     try:
         default_permissions = await Config.get('user.permissions')
         for user in await Users.get_users_by_user_ids(user_ids):
+            if strict_user_isolation() and user.role != 'admin':
+                continue
             if user.role != 'admin' and not await has_permission(user.id, 'features.channels', default_permissions):
                 continue
 
@@ -608,7 +611,7 @@ async def user_join(sid, data):
     await sio.enter_room(sid, f'user:{user.id}')
 
     # Join all the channels only if user has channels permission
-    if user.role == 'admin' or await has_permission(user.id, 'features.channels', await Config.get('user.permissions')):
+    if user.role == 'admin' or (not strict_user_isolation() and await has_permission(user.id, 'features.channels', await Config.get('user.permissions'))):
         channels = await Channels.get_channels_by_user_id(user.id)
         log.debug('channels=%r', channels)
         for channel in channels:
@@ -676,7 +679,7 @@ async def join_channel(sid, data):
         return
 
     # Join all the channels only if user has channels permission
-    if user.role == 'admin' or await has_permission(user.id, 'features.channels', await Config.get('user.permissions')):
+    if user.role == 'admin' or (not strict_user_isolation() and await has_permission(user.id, 'features.channels', await Config.get('user.permissions'))):
         channels = await Channels.get_channels_by_user_id(user.id)
         log.debug('channels=%r', channels)
         for channel in channels:
@@ -726,6 +729,10 @@ async def join_note(sid, data):
 
 @sio.on('events:channel')
 async def channel_events(sid, data):
+    if strict_user_isolation():
+        actor = await get_socket_session_user(sid)
+        if not actor or actor.get('role') != 'admin':
+            return
     room = f'channel:{data["channel_id"]}'
     if sid not in (get_room_sid_map(sio.manager, '/', room) or {}):
         return

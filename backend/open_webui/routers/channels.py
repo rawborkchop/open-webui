@@ -68,12 +68,13 @@ from open_webui.utils.models import (
 )
 from pydantic import BaseModel, field_validator
 from sqlalchemy import select, update
+from open_webui.openrouter.private_routes import enforce_private_routes
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 log = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(enforce_private_routes)])
 
 
 async def channel_has_access(

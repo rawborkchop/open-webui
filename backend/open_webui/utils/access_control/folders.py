@@ -1,10 +1,17 @@
 from open_webui.models.access_grants import AccessGrants
 from open_webui.models.folders import FolderModel, Folders
 from sqlalchemy.ext.asyncio import AsyncSession
+from open_webui.openrouter.private_data import strict_user_isolation
 
 
 async def has_folder_access(user_id: str, folder: FolderModel, permission: str, db: AsyncSession | None) -> bool:
     """Check if user has access to folder directly or via ancestor inheritance."""
+    if strict_user_isolation():
+        if folder.user_id == user_id:
+            return True
+        from open_webui.models.users import Users
+        user = await Users.get_user_by_id(user_id, db=db)
+        return user is not None and user.role == 'admin'
     # A corrupt parent loop must not spin forever
     seen_ids = set()
     while folder and folder.id not in seen_ids:

@@ -36,11 +36,12 @@ from open_webui.utils.auth import get_admin_user, get_verified_user
 from open_webui.tasks import has_active_tasks
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
+from open_webui.openrouter.private_routes import enforce_private_routes
 
 log = logging.getLogger(__name__)
 
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(enforce_private_routes)])
 
 
 from open_webui.utils.access_control.folders import has_folder_access as _has_folder_access

@@ -10,6 +10,7 @@ from open_webui.models.knowledge import Knowledges
 from open_webui.models.models import Models
 from open_webui.models.notes import Notes
 from open_webui.models.users import UserModel, Users
+from open_webui.openrouter.private_data import strict_user_isolation
 from sqlalchemy.ext.asyncio import AsyncSession
 
 log = logging.getLogger(__name__)
@@ -43,6 +44,8 @@ async def has_access_to_file(
     # Direct ownership
     if file.user_id == user.id:
         return True
+    if strict_user_isolation():
+        return user.role == 'admin'
 
     # Check if the file is associated with any knowledge bases the user has access to.
     # An object (knowledge base or workspace model) confers write/delete on a file only when

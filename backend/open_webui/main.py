@@ -150,6 +150,7 @@ from open_webui.models.models import Models, normalize_model_tags
 from open_webui.models.groups import Groups, resolve_group_default_models
 from open_webui.models.users import Users
 from open_webui.openrouter.input_capture_middleware import InputCaptureMiddleware
+from open_webui.openrouter.private_data import strict_user_isolation
 from open_webui.routers import openrouter
 from open_webui.routers import (
     apps,
@@ -1381,6 +1382,8 @@ async def chat_completion(
             # Gate channel: branch — caller needs write access on the channel, and the
             # supplied message_id must belong to that channel and be the caller's own.
             if chat_id.startswith('channel:'):
+                if strict_user_isolation() and user.role != 'admin':
+                    raise HTTPException(403, 'Shared channel inference is disabled in private mode')
                 channel_id = chat_id.removeprefix('channel:')
                 channel = await Channels.get_channel_by_id(channel_id)
                 if not channel:
