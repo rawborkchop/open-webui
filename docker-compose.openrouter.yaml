@@ -1,0 +1,18 @@
+services:
+  open-webui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        USE_OLLAMA: "false"
+        USE_CUDA: "false"
+    image: open-webui-openrouter:local
+    env_file:
+      - ./config/openrouter/.env
+    ports:
+      - "127.0.0.1:3000:8080"
+    volumes:
+      - openrouter-data:/app/backend/data
+    restart: unless-stopped
+volumes:
+  openrouter-data: {}
