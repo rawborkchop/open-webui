@@ -67,6 +67,7 @@ with TestClient(app) as client:
         'access_grants': [{'principal_type': 'user', 'principal_id': user['id'], 'permission': 'read'} for user in (a, b)]}))
     policy = successful(client.get('/api/v1/openrouter/policies', headers=auth(admin)))[0]
     policy['rules']['temperature'] = {'access': 'editable', 'type': 'number', 'minimum': 0, 'maximum': 1}
+    policy['rules']['system'] = {'access': 'editable', 'type': 'string'}
     successful(client.put('/api/v1/openrouter/policies', headers=auth(admin), json={
         'scope': 'global', 'target': '*', 'expected_version': 0, 'rules': policy['rules']}))
     chat_a = successful(client.post('/api/v1/chats/new', headers=auth(a), json={'chat': {'title': 'Private A', 'history': {'messages': {}, 'currentId': None}}}))
@@ -79,7 +80,7 @@ with TestClient(app) as client:
     checks['openrouter_model_marker'] = any(model.get('openrouter') for model in model_list['data'])
     message_id = str(uuid4())
     body = {'model': 'mock/reasoning', 'stream': False, 'messages': [{'role': 'user', 'content': 'Question A'}],
-        'params': {'temperature': 0.5}, 'chat_id': chat_a['id'], 'id': str(uuid4()),
+        'params': {'temperature': 0.5, 'custom_params': {'system': 'Custom allowed system'}}, 'chat_id': chat_a['id'], 'id': str(uuid4()),
         'user_message': {'id': message_id, 'role': 'user', 'content': 'Question A', 'parentId': None, 'childrenIds': []}}
     completion = client.post('/api/chat/completions', headers=auth(a), json=body)
     successful(completion)
@@ -88,6 +89,7 @@ with TestClient(app) as client:
     record_id = records_a['items'][0]['id']
     detail = successful(client.get(f'/api/v1/openrouter/exchanges/{record_id}', headers=auth(a)))
     checks['effective_input_recorded'] = detail['request']['temperature'] == 0.5
+    checks['authorized_system_applied'] = any(message.get('role') == 'system' and message.get('content') == 'Custom allowed system' for message in detail['request']['messages'])
     checks['reasoning_recorded'] = 'Provider-returned reasoning.' in json.dumps(detail['response']) and 'opaque-provider-block' in json.dumps(detail['response'])
     checks['chat_link_recorded'] = detail['chat_id'] == chat_a['id']
     checks['user_identity_not_spoofed'] = provider_calls[-1]['user'] == a['id']

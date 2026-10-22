@@ -46,7 +46,7 @@ async def test_guard_persists_input_before_send_and_keeps_provider_output(store)
     assert raw == wire
     assert record['state'] == 'completed'
 @pytest.mark.asyncio
-@pytest.mark.parametrize('body', [{'temperature': 2}, {'params': {'custom_params': {'temperature': '2'}}}, {'max_output_tokens': 999}])
+@pytest.mark.parametrize('body', [{'temperature': 2}, {'params': {'custom_params': {'temperature': '2'}}}, {'max_output_tokens': 999}, {'params': {'model_controls': {'m': {'choice': 'unauthorized-expansion'}}}}])
 async def test_disallowed_parameters_never_reach_provider(store, body):
     # Arrange
     original = {'model': 'm', 'messages': [], **body}

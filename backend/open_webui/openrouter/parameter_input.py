@@ -50,9 +50,10 @@ def parameter_input(body):
         result[key] = value
     systems = [message.get('content') for message in body.get('messages', []) if isinstance(message, dict) and message.get('role') in {'system', 'developer'}]
     if systems:
-        if 'system' in result:
+        system_value = '\n'.join(systems) if all(isinstance(value, str) for value in systems) else systems
+        if 'system' in result and result['system'] != system_value:
             raise ValueError('Conflicting system prompt sources')
-        result['system'] = systems
+        result['system'] = system_value
     if body.get('instructions') is not None:
         result['system'] = body['instructions']
         result.pop('instructions', None)

@@ -22,7 +22,7 @@
 		try { params = updateParameter(params, path, raw, rule); error = ''; }
 		catch { error = `${path}: introduce un valor JSON válido.`; }
 	}
-	$: fields = Object.entries(rules).filter(([path, rule]) => !path.startsWith('stream') && path !== 'system' && (rule.access === 'editable' || rule.value !== undefined));
+	$: fields = Object.entries(rules).filter(([path, rule]) => !path.startsWith('stream') && (rule.access === 'editable' || rule.value !== undefined));
 	$: if (mounted && model) void load(model);
 	onMount(() => { mounted = true; });
 	onDestroy(() => controller?.abort());

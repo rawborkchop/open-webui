@@ -63,6 +63,8 @@ async def governed_request(session, request, user, *, metadata=None, passthrough
                 internal = True
     try:
         if not internal:
+            if user.role != 'admin' and (original.get('params') or {}).get('model_controls'):
+                raise ValueError('Use authorized OpenRouter parameters instead of model control expansions')
             evaluator.authorize(parameter_input(original), is_admin=user.role == 'admin')
         effective = evaluator.apply(canonical_payload(payload))
     except ValueError as error:

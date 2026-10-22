@@ -30,7 +30,7 @@ def test_system_messages_are_treated_as_a_controlled_input():
     # Act
     result = parameter_input(body)
     # Assert
-    assert result['system'] == ['override']
+    assert result['system'] == 'override'
 def test_response_payload_uses_same_canonical_token_limit():
     # Arrange
     body = {'model': 'm', 'max_output_tokens': 500}
@@ -38,3 +38,10 @@ def test_response_payload_uses_same_canonical_token_limit():
     result = canonical_payload(body)
     # Assert
     assert result == {'model': 'm', 'max_tokens': 500}
+def test_webui_duplicate_system_source_is_normalized_once():
+    # Arrange
+    body = {'params': {'system': 'Allowed prompt'}, 'messages': [{'role': 'system', 'content': 'Allowed prompt'}]}
+    # Act
+    result = parameter_input(body)
+    # Assert
+    assert result == {'system': 'Allowed prompt'}
