@@ -9,6 +9,16 @@ if (-not (Test-Path -LiteralPath 'config/openrouter/.env')) {
 ```
 Editar `config/openrouter/.env` y completar `OPENAI_API_KEY=` cuando se disponga de la credencial. El archivo local está excluido de Git y del contexto de construcción de Docker; la plantilla sí se versiona. No se necesitan workflows ni acceso a n8n.
 ## Arranque
+En Windows, con `.venv` y el frontend ya compilado, se puede arrancar directamente sin Docker:
+```powershell
+./scripts/start-openrouter.ps1
+```
+Abrir `http://localhost:3000`. El script carga `config/openrouter/.env`, ejecuta las migraciones y arranca el servidor oculto en la interfaz local. Guarda SQLite, archivos y secreto de sesión en `backend/data`, excluido de Git; no usa los datos temporales de las pruebas. Usa las dependencias slim instaladas y evita descargas automáticas de modelos locales; la conexión de OpenRouter sigue disponible al introducir su clave. Los logs están en `backend/data/openrouter-server.error.log` y `openrouter-server.log`. El puerto se puede cambiar con `-Port 3001`. Para detener únicamente este servidor:
+```powershell
+Stop-Process -Id ([int](Get-Content -LiteralPath 'backend/data/openrouter-server.pid'))
+```
+El puerto ocupado se rechaza para evitar iniciar dos instancias. El archivo de configuración del contenedor se adapta automáticamente a las rutas locales; el script no guarda ni imprime claves en su salida.
+Para usar Docker en su lugar:
 Instalar Docker Engine con Compose o Docker Desktop antes de ejecutar:
 ```powershell
 docker compose -p open-webui-openrouter -f docker-compose.openrouter.yaml config --quiet
